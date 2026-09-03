@@ -1,38 +1,45 @@
-# 咖啡资讯聚合订阅源配置（MVP 版）
-# 三层：global(全球) / china(全国) / yunnan(云南) / policy(政策)
+# 咖啡资讯聚合订阅源配置
+# 三层：global(全球) / china(全国) / yunnan(云南)
 # type 说明：
 #   rss     —— 源站自带 RSS/Atom，聚合器直接合并
 #   scrape  —— 源站无 RSS，需按 scraper 抓取（见脚本 SCRAPERS）
+# scraper 说明：
+#   yunnong          —— 云南省农业农村厅列表页
+#   coffinance       —— 咖啡金融网首页价格快讯 + /mess/ 最新文章
+#   coffinance_list  —— 咖啡金融网栏目页（自带日期+摘要，单请求取全）
+# keywords（可选）：只保留标题或摘要命中任一关键词的条目。
+#   用于综合性栏目（如云农快讯是全省农业快讯，需只留咖啡相关）。
 # 新增源：照着下面格式加一个 [[sources]] 块即可。
 
+# ── 全球（中文报道的国际动态与价格）──────────────────
 [[sources]]
-name = "Daily Coffee News"
+name = "咖啡金融网·咖啡资讯"
 layer = "global"
-type = "rss"
-url = "https://dailycoffeenews.com/feed/"
+type = "scrape"
+scraper = "coffinance_list"
+url = "https://www.coffinance.com/coffeeinformation/"
 
+# ── 全国（产业与企业动态）────────────────────────────
 [[sources]]
-name = "Perfect Daily Grind"
-layer = "global"
-type = "rss"
-url = "https://perfectdailygrind.com/feed/"
+name = "咖啡金融网·行业动态"
+layer = "china"
+type = "scrape"
+scraper = "coffinance_list"
+url = "https://www.coffinance.com/industryaction/"
 
+# ── 云南（产区动态 + 政策）───────────────────────────
 [[sources]]
-name = "Sprudge"
-layer = "global"
-type = "rss"
-url = "https://sprudge.com/feed/"
+name = "咖啡金融网·中国云南"
+layer = "yunnan"
+type = "scrape"
+scraper = "coffinance_list"
+url = "https://www.coffinance.com/yunnan/"
 
+# 综合农业快讯，只用咖啡相关内容
 [[sources]]
 name = "云南省农业农村厅·云农快讯"
 layer = "yunnan"
 type = "scrape"
 scraper = "yunnong"
 url = "https://nync.yn.gov.cn/html/yunnongkuanxun-new/"
-
-[[sources]]
-name = "咖啡金融网"
-layer = "china"
-type = "scrape"
-scraper = "coffinance"
-url = "https://www.coffinance.com/"
+keywords = ["咖啡", "热作"]
