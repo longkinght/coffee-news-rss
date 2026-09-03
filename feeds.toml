@@ -1,0 +1,38 @@
+# 咖啡资讯聚合订阅源配置（MVP 版）
+# 三层：global(全球) / china(全国) / yunnan(云南) / policy(政策)
+# type 说明：
+#   rss     —— 源站自带 RSS/Atom，聚合器直接合并
+#   scrape  —— 源站无 RSS，需按 scraper 抓取（见脚本 SCRAPERS）
+# 新增源：照着下面格式加一个 [[sources]] 块即可。
+
+[[sources]]
+name = "Daily Coffee News"
+layer = "global"
+type = "rss"
+url = "https://dailycoffeenews.com/feed/"
+
+[[sources]]
+name = "Perfect Daily Grind"
+layer = "global"
+type = "rss"
+url = "https://perfectdailygrind.com/feed/"
+
+[[sources]]
+name = "Sprudge"
+layer = "global"
+type = "rss"
+url = "https://sprudge.com/feed/"
+
+[[sources]]
+name = "云南省农业农村厅·云农快讯"
+layer = "yunnan"
+type = "scrape"
+scraper = "yunnong"
+url = "https://nync.yn.gov.cn/html/yunnongkuanxun-new/"
+
+[[sources]]
+name = "咖啡金融网"
+layer = "china"
+type = "scrape"
+scraper = "coffinance"
+url = "https://www.coffinance.com/"
