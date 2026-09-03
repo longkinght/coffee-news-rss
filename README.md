@@ -3,18 +3,22 @@
 把**全球 / 全国 / 云南**三层咖啡资讯（新闻 · 价格 · 政策）聚合成**一条 RSS 2.0**，
 通过 GitHub Actions 每天定时生成，并发布到 GitHub Pages，得到一个**永久订阅链接**。
 
-## 当前订阅源（MVP，5 个）
+## 当前订阅源（纯中文，4 个）
+
+> 设计取舍：英文源（Daily Coffee News / Perfect Daily Grind / Sprudge）已全部移除——
+> 无人值守的每日任务里挂翻译等于埋雷（需第三方 API key 或离线模型导致变慢且专有名词翻乱）。
+> 国际动态由「咖啡金融网·咖啡资讯」以中文报道，覆盖全球产地与价格面。
 
 | 源 | 层 | 接入方式 |
 |---|---|---|
-| Daily Coffee News | 全球 | RSS |
-| Perfect Daily Grind | 全球 | RSS |
-| Sprudge | 全球 | RSS |
-| 云南省农业农村厅·云农快讯 | 云南 | 抓取（scraper: yunnong） |
-| 咖啡金融网 | 全国 | 抓取（scraper: coffinance） |
+| 咖啡金融网·咖啡资讯 | 全球 | 抓取（scraper: coffinance_list） |
+| 咖啡金融网·行业动态 | 全国 | 抓取（scraper: coffinance_list） |
+| 咖啡金融网·中国云南 | 云南 | 抓取（scraper: coffinance_list，替代已停服的 YCE） |
+| 云南省农业农村厅·云农快讯 | 云南 | 抓取（scraper: yunnong，按关键词「咖啡/热作」过滤） |
 
-> 后续可在 `feeds.toml` 里加源（如 Global Coffee Report、云南国际咖啡交易中心、
-> 省农科院《咖啡双周报》等），每次加一个 `[[sources]]` 块即可。
+> 后续可在 `feeds.toml` 里加源，每次加一个 `[[sources]]` 块即可。
+> 注：云南国际咖啡交易中心（YCE）官网因备案不合规已被关停；省农科院《咖啡双周报》
+> 仅发 PDF + 微信公众号、无网页列表，暂无法自动抓取，已用「咖啡金融网·中国云南」替代。
 
 ## 本地运行
 
@@ -54,6 +58,6 @@ python coffee_news_aggregator.py --config feeds.toml --out public --limit 50
 
 ## 注意事项
 
-- 部分站点（Perfect Daily Grind / Sprudge）有反爬，已用 `curl/8.0` UA 规避。
 - 抓取类源依赖对方页面结构，若对方改版导致解析失败，脚本会跳过该源并告警，不影响其他源。
-- 国内与云南优质信源多在微信公众号，需「公众号 RSS 桥接」或抓取历史文章，后续版本再接入。
+- 综合农业栏目（如云农快讯）用 `keywords` 过滤，只保留标题/摘要命中关键词的条目，避免稀释 feed。
+- 国内与云南部分优质信源（YCE、省农科院《咖啡双周报》）暂无网页版，后续若开通或改用公众号 RSS 桥接再接入。
