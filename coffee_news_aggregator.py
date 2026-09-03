@@ -203,7 +203,7 @@ def parse_feed(xml_text: str, source_name: str, layer: str):
 # ----------------------------------------------------------------------------
 # 抓取器（scraper）：源站无 RSS 时用
 # ----------------------------------------------------------------------------
-def scrape_yunnong(url: str):
+def scrape_yunnong(url: str, name: str, layer: str):
     """云南省农业农村厅·云农快讯：ul.zxwj-list-ul > li"""
     html = fetch(url)
     items = []
@@ -221,11 +221,45 @@ def scrape_yunnong(url: str):
         href = a.group(1)
         dm = re.search(r"(\d{4}-\d{2}-\d{2})", li)
         pub = parse_date_any(dm.group(1)) if dm else None
-        items.append(mk(title, base + href, pub, "", "云南省农业农村厅·云农快讯", "yunnan"))
+        items.append(mk(title, base + href, pub, "", name, layer))
     return items
 
 
-def scrape_coffinance(url: str):
+def scrape_coffinance_list(url: str, name: str, layer: str):
+    """咖啡金融网栏目页（/yunnan/、/marketreport/、/industryaction/ 等）。
+
+    栏目页自带日期与摘要，单请求即可取全，无需逐条抓详情页：
+      <li>
+        <p class="article-news-time pull-left">2026-07-21 09:39:42</p>
+        <a href="/detail/7266" target="_blank" class="article-title">标题</a>
+        <p>摘要…</p>
+    """
+    base = "https://www.coffinance.com"
+    html = fetch(url)
+    items = []
+    seen = set()
+    for li in re.findall(r"<li>(.*?)</li>", html, re.S):
+        tm = re.search(r'article-news-time[^"]*">\s*([^<]+?)\s*<', li)
+        am = re.search(
+            r'<a[^>]+href="(/detail/\d+)"[^>]+class="article-title"[^>]*>(.*?)</a>',
+            li,
+            re.S,
+        )
+        if not tm or not am:
+            continue
+        href, title = am.group(1), clean(am.group(2))
+        if not title or href in seen:
+            continue
+        seen.add(href)
+        desc = ""
+        pm = re.search(r"</a>\s*<p>(.*?)</p>", li, re.S)
+        if pm:
+            desc = clean(pm.group(1))
+        items.append(mk(title, base + href, parse_date_any(tm.group(1)), desc, name, layer))
+    return items
+
+
+def scrape_coffinance(url: str, name: str, layer: str):
     """咖啡金融网：首页价格快讯 + /mess/ 最新文章"""
     base = url.rstrip("/")
     items = []
@@ -244,7 +278,7 @@ def scrape_coffinance(url: str):
             dm = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", title)
             pub = parse_date_any(dm.group(0)) if dm else None
             link = base + (href if href.startswith("/") else "/mess/")
-            items.append(mk(title, link, pub, "", "咖啡金融网", "china"))
+            items.append(mk(title, link, pub, "", name, layer))
     except Exception as e:
         print(f"[warn] 咖啡金融网首页抓取失败：{e}", file=sys.stderr)
 
@@ -268,7 +302,7 @@ def scrape_coffinance(url: str):
                     pub = parse_date_any(dm.group(1))
             except Exception:
                 pass
-            items.append(mk(title, base + href, pub, "", "咖啡金融网", "china"))
+            items.append(mk(title, base + href, pub, "", name, layer))
     except Exception as e:
         print(f"[warn] 咖啡金融网/mess/抓取失败：{e}", file=sys.stderr)
 
@@ -278,6 +312,7 @@ def scrape_coffinance(url: str):
 SCRAPERS = {
     "yunnong": scrape_yunnong,
     "coffinance": scrape_coffinance,
+    "coffinance_list": scrape_coffinance_list,
 }
 
 
@@ -296,10 +331,25 @@ def aggregate(sources, limit=None):
                 its = parse_feed(fetch(url), name, layer)
             elif typ == "scrape":
                 sc = s.get("scraper")
-                its = SCRAPERS[sc](url) if sc in SCRAPERS else []
+                its = SCRAPERS[sc](url, name, layer) if sc in SCRAPERS else []
             else:
                 its = []
-            print(f"[info] {name}: {len(its)} 条", file=sys.stderr)
+
+            # 关键词过滤：综合性栏目（如云农快讯）需只保留咖啡相关内容
+            kws = s.get("keywords") or []
+            if kws:
+                before = len(its)
+                its = [
+                    it
+                    for it in its
+                    if any(k in (it["title"] or "") or k in (it["desc"] or "") for k in kws)
+                ]
+                print(
+                    f"[info] {name}: {before} 条，按关键词 {kws} 过滤后 {len(its)} 条",
+                    file=sys.stderr,
+                )
+            else:
+                print(f"[info] {name}: {len(its)} 条", file=sys.stderr)
             all_items.extend(its)
         except Exception as e:
             print(f"[warn] {name} 抓取失败：{e}", file=sys.stderr)
